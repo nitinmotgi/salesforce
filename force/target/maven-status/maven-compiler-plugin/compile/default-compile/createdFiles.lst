@@ -1,0 +1,5 @@
+com/google/cdap/SalesforceBulkSource.class
+com/google/cdap/SalesforceBulkSource$Config.class
+com/google/cdap/BulkExtract.class
+com/google/cdap/SessionRenewer.class
+com/google/cdap/PartnerConfig.class

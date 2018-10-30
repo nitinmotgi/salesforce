@@ -1,0 +1,107 @@
+{
+  "metadata": {
+    "spec-version": "1.5"
+  },
+  "configuration-groups": [
+    {
+      "label": "Reference",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        }
+      ]
+    },
+    {
+      "label": "Authentication",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Username",
+          "name": "username"
+        },
+        {
+          "widget-type": "password",
+          "label": "Password",
+          "name": "password"
+        }
+      ]
+    },
+    {
+      "label": "API",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Authentication Endpoint",
+          "name": "authendpoint",
+          "widget-attributes" : {
+            "placeholder": "login.salesforce.com"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "API version",
+          "name": "version",
+          "widget-attributes" : {
+            "placeholder": "36.0"
+          }
+        }
+      ]
+    },
+    {
+      "label": "Query",
+      "properties": [
+        {
+          "widget-type": "textarea",
+          "label": "SQL",
+          "name": "sql",
+          "widget-attributes" : {
+            "placeholder": "SELECT <offset field>, ... FROM <object> WHERE <offset field> > <offset> ORDER BY <offset field>"
+          }
+        },
+        {
+          "name": "incremental",
+          "label" : "Incremental",
+          "widget-type": "radio-group",
+          "widget-attributes": {
+            "layout": "inline",
+            "default": "no",
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes"
+              },
+              {
+                "id": "no",
+                "label": "No"
+              }
+            ]
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Offset",
+          "name": "offset"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Offset Field",
+          "name": "field"
+        },
+        {
+          "name": "query-interval-min",
+          "label": "Query Interval (in mins)",
+          "widget-type": "number",
+          "widget-attributes": {
+            "default": "1",
+            "min": "1",
+            "max": "30"
+          }
+        }
+
+      ]
+    }
+  ],
+  "outputs": []
+}

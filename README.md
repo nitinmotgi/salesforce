@@ -1,2 +1,1 @@
-# salesforce
-A collection of salesforce plugins
+# Salesforce Connector
