@@ -1,6 +1,6 @@
 # intellij
 .idea/
-target/
+target/*
 force/target/*
 *.iml
 
