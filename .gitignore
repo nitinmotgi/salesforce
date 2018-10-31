@@ -1,5 +1,7 @@
 # intellij
 .idea/
+target/
+force/target/*
 *.iml
 
 # Compiled class file

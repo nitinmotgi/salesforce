@@ -105,11 +105,6 @@
       <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.cometd.java</groupId>
-      <artifactId>cometd-java-client</artifactId>
-      <version>3.1.4</version>
-    </dependency>
   </dependencies>
 
   <build>
