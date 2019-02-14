@@ -42,10 +42,10 @@ import java.io.Serializable;
 
 
 @Plugin(type = StreamingSource.PLUGIN_TYPE)
-@Name(SalesforceBulkSource.NAME)
-@Description(SalesforceBulkSource.DESCRIPTION)
-public class SalesforceBulkSource extends ReferenceStreamingSource<StructuredRecord> {
-  private static Logger LOG = LoggerFactory.getLogger(SalesforceBulkSource.class);
+@Name(SalesforceStreamingSource.NAME)
+@Description(SalesforceStreamingSource.DESCRIPTION)
+public class SalesforceStreamingSource extends ReferenceStreamingSource<StructuredRecord> {
+  private static Logger LOG = LoggerFactory.getLogger(SalesforceStreamingSource.class);
   static final String NAME = "SalesforceBulk";
   static final String DESCRIPTION = "Salesforce Bulk Source";
   private Config config;
@@ -56,7 +56,7 @@ public class SalesforceBulkSource extends ReferenceStreamingSource<StructuredRec
     Schema.Field.of("body", Schema.of(Schema.Type.BYTES))
   );
 
-  public SalesforceBulkSource(Config config) {
+  public SalesforceStreamingSource(Config config) {
     super(config);
     this.config = config;
   }
