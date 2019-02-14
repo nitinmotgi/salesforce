@@ -22,7 +22,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>force</artifactId>
+  <artifactId>salesforce-plugins</artifactId>
   <name>Force API Integration</name>
 
   <dependencies>
@@ -168,6 +168,12 @@
       <artifactId>cdap-spark-core2_2.11</artifactId>
       <version>${cdap.version}</version>
       <scope>test</scope>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/com.force.api/force-wsc -->
+    <dependency>
+      <groupId>com.force.api</groupId>
+      <artifactId>force-wsc</artifactId>
+      <version>22.0.0</version>
     </dependency>
   </dependencies>
 
