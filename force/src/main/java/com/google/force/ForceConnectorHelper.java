@@ -64,6 +64,39 @@ public class ForceConnectorHelper {
     this.defaultPushEndpoint = pushEndPoint;
   }
 
+  public void start() {
+
+    try {
+      BayeuxClient bayeuxClient = getClient(timeout, this.defaultPushEndpoint, clientId, clientSecret, username, password);
+      setNoValidation();
+      waitForHandshake(bayeuxClient, 10 * 1000, 1000);
+      LOG.info("Client handshake done");
+      bayeuxClient.getChannel("/topic/" + topic).subscribe((channel, message) -> {
+        try {
+          JSONObject jsonObject = new JSONObject(new JSONTokener(message.getJSON()));
+          LOG.info("Message: " + message.getJSON());
+          jsonQueue.add(jsonObject);
+        } catch (org.json.JSONException e) {
+          LOG.error(e.getLocalizedMessage());
+        }
+      });
+
+    } catch (Exception e) {
+      LOG.error("could not start client: " + e.getMessage());
+    }
+
+
+  }
+
+  public List<JSONObject> getMessages() {
+    final List<JSONObject> objects = new ArrayList<>(10);
+    jsonQueue.drainTo(objects, 10);
+    if (objects.isEmpty()) {
+      return objects;
+    } else {
+      return objects;
+    }
+  }
 
   private JSONObject oauthLogin(String CLIENT_ID, String CLIENT_SECRET, String USERNAME, String PASSWORD) throws Exception {
 
@@ -167,39 +200,5 @@ public class ForceConnectorHelper {
                                      String authType) {
       }
     }};
-  }
-
-  public void start() {
-
-    try {
-      BayeuxClient bayeuxClient = getClient(timeout, this.defaultPushEndpoint, clientId, clientSecret, username, password);
-      setNoValidation();
-      waitForHandshake(bayeuxClient, 10 * 1000, 1000);
-      LOG.info("Client handshake done");
-      bayeuxClient.getChannel("/topic/" + topic).subscribe((channel, message) -> {
-        try {
-          JSONObject jsonObject = new JSONObject(new JSONTokener(message.getJSON()));
-          LOG.info("Message: " + message.getJSON());
-          jsonQueue.add(jsonObject);
-        } catch (org.json.JSONException e) {
-          LOG.error(e.getLocalizedMessage());
-        }
-      });
-
-    } catch (Exception e) {
-      LOG.error("could not start client: " + e.getMessage());
-    }
-
-
-  }
-
-  public List<JSONObject> getMessages() {
-    final List<JSONObject> objects = new ArrayList<>(10);
-    jsonQueue.drainTo(objects, 10);
-    if (objects.isEmpty()) {
-      return objects;
-    } else {
-      return objects;
-    }
   }
 }

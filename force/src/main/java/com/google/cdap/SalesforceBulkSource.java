@@ -62,7 +62,7 @@ public class SalesforceBulkSource extends ReferenceStreamingSource<StructuredRec
   }
 
   @Override
-  public JavaDStream<StructuredRecord> getStream(StreamingContext streamingContext) throws Exception {
+  public JavaDStream<StructuredRecord> getStream(StreamingContext streamingContext) {
 
     JavaStreamingContext jssc = streamingContext.getSparkStreamingContext();
 
@@ -135,7 +135,7 @@ public class SalesforceBulkSource extends ReferenceStreamingSource<StructuredRec
     }
   }
 
-  public class ForceReceiver extends Receiver<String> {
+  class ForceReceiver extends Receiver<String> {
 
     String username;
     String password;
