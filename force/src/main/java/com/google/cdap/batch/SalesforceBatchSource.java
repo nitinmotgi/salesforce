@@ -94,8 +94,7 @@ public class SalesforceBatchSource extends BatchSource {
   }
 
 
-  private void closeJob(BulkConnection connection, String jobId)
-    throws AsyncApiException {
+  private void closeJob(BulkConnection connection, String jobId) throws AsyncApiException {
     JobInfo job = new JobInfo();
     job.setId(jobId);
     job.setState(JobStateEnum.Closed);
@@ -112,8 +111,7 @@ public class SalesforceBatchSource extends BatchSource {
    * @throws AsyncApiException
    */
   private void awaitCompletion(BulkConnection connection, JobInfo job,
-                               List<BatchInfo> batchInfoList)
-    throws AsyncApiException {
+                               List<BatchInfo> batchInfoList) throws AsyncApiException {
     long sleepTime = 0L;
     Set<String> incomplete = new HashSet<String>();
     for (BatchInfo bi : batchInfoList) {
@@ -148,8 +146,7 @@ public class SalesforceBatchSource extends BatchSource {
    * @return The JobInfo for the new job.
    * @throws AsyncApiException
    */
-  private JobInfo createJob(String sobjectType, BulkConnection connection)
-    throws AsyncApiException {
+  private JobInfo createJob(String sobjectType, BulkConnection connection) throws AsyncApiException {
     JobInfo job = new JobInfo();
     job.setObject(sobjectType);
     job.setOperation(OperationEnum.insert);
