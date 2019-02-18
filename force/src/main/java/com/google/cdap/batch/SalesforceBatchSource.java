@@ -169,14 +169,6 @@ public class SalesforceBatchSource extends BatchSource {
     }
   }
 
-
-  public static void main(String[] args) throws Exception {
-    //SalesforceBatchSource example = new SalesforceBatchSource(config);
-    // Replace arguments below with your credentials and test file name
-    // The first parameter indicates that we are loading Account records
-    //example.runSample("Account", "myUser@myOrg.com", "myPassword", "mySampleData.csv");
-  }
-
   /**
    * Creates a Bulk API job and uploads batches for a CSV file.
    */
@@ -226,8 +218,7 @@ public class SalesforceBatchSource extends BatchSource {
   }
 
 
-  private void closeJob(BulkConnection connection, String jobId)
-    throws AsyncApiException {
+  private void closeJob(BulkConnection connection, String jobId) throws AsyncApiException {
     JobInfo job = new JobInfo();
     job.setId(jobId);
     job.setState(JobStateEnum.Closed);
@@ -244,8 +235,7 @@ public class SalesforceBatchSource extends BatchSource {
    * @throws AsyncApiException
    */
   private void awaitCompletion(BulkConnection connection, JobInfo job,
-                               List<BatchInfo> batchInfoList)
-    throws AsyncApiException {
+                               List<BatchInfo> batchInfoList) throws AsyncApiException {
     long sleepTime = 0L;
     Set<String> incomplete = new HashSet<>();
     for (BatchInfo bi : batchInfoList) {
@@ -280,8 +270,7 @@ public class SalesforceBatchSource extends BatchSource {
    * @return The JobInfo for the new job.
    * @throws AsyncApiException
    */
-  private JobInfo createJob(String sobjectType, BulkConnection connection)
-    throws AsyncApiException {
+  private JobInfo createJob(String sobjectType, BulkConnection connection) throws AsyncApiException {
     JobInfo job = new JobInfo();
     job.setObject(sobjectType);
     job.setOperation(OperationEnum.insert);
