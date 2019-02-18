@@ -25,24 +25,33 @@ import co.cask.cdap.etl.api.batch.BatchContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
 import co.cask.hydrator.common.ReferencePluginConfig;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Charsets;
+import com.google.common.base.Preconditions;
+import com.google.common.io.CharStreams;
+import com.google.gson.Gson;
+import com.google.gson.annotations.SerializedName;
 import com.sforce.async.AsyncApiException;
 import com.sforce.async.BatchInfo;
 import com.sforce.async.BatchStateEnum;
 import com.sforce.async.BulkConnection;
 import com.sforce.async.CSVReader;
+import com.sforce.async.ConcurrencyMode;
 import com.sforce.async.ContentType;
 import com.sforce.async.JobInfo;
 import com.sforce.async.JobStateEnum;
 import com.sforce.async.OperationEnum;
+import com.sforce.async.QueryResultList;
 import com.sforce.ws.ConnectorConfig;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,6 +59,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 
 @Plugin(type = BatchSource.PLUGIN_TYPE)
@@ -57,6 +67,9 @@ import java.util.Set;
 @Description("PLugin to read data from Salesforce in batches.")
 public class SalesforceBatchSource extends BatchSource {
   static final String NAME = "Salesforce";
+  private static final String AUTH_URL = "https://login.salesforce.com/services/oauth2/token";
+  private static final Gson GSON = new Gson();
+
   private final Config config;
 
   @VisibleForTesting
@@ -83,15 +96,41 @@ public class SalesforceBatchSource extends BatchSource {
     @Macro
     private final String password;
 
-    Config(String referenceName, String clientId, String clientSecret, String username, String password) {
+    @Description("The Salesforce instance name")
+    @Macro
+    private final String instance;
+
+    @Description("The Salesforce object to read from")
+    @Macro
+    private final String object;
+
+    @Description("The SOQL query to retrieve results for")
+    @Macro
+    private final String query;
+
+    @Description("The Force API version to use. Defaults to 45.")
+    @Nullable
+    @Macro
+    private final String apiVersion;
+
+    Config(String referenceName, String clientId, String clientSecret,
+           String username, String password, String instance, String object, String query) {
+      this(referenceName, clientId, clientSecret, username, password, instance, object, query, "45");
+    }
+
+    Config(String referenceName, String clientId, String clientSecret,
+           String username, String password, String instance, String object, String query, String apiVersion) {
       super(referenceName);
       this.clientId = clientId;
       this.clientSecret = clientSecret;
       this.username = username;
       this.password = password;
+      this.instance = instance;
+      this.object = object;
+      this.query = query;
+      this.apiVersion = apiVersion;
     }
   }
-
 
   @Override
   public void initialize(Object o) throws Exception {
@@ -104,13 +143,8 @@ public class SalesforceBatchSource extends BatchSource {
   }
 
   @Override
-  public void prepareRun(Object o) throws Exception {
-
-  }
-
-  @Override
   public void onRunFinish(boolean b, Object o) {
-
+    //closeJob(, );
   }
 
   @Override
@@ -118,64 +152,96 @@ public class SalesforceBatchSource extends BatchSource {
 
   }
 
-//  public boolean login() {
-//    boolean success = false;
-//
-//    String userId = getUserInput("UserID: ");
-//    String passwd = getUserInput("Password: ");
-//    String soapAuthEndPoint = "https://" + loginHost + soapService;
-//    String bulkAuthEndPoint = "https://" + loginHost + bulkService;
-//    try {
-//      ConnectorConfig config = new ConnectorConfig();
-//      config.setSessionId("Sfasd");
-//      config.setUsername(userId);
-//      config.setPassword(passwd);
-//      config.setAuthEndpoint(soapAuthEndPoint);
-//      config.setCompression(true);
-//      config.setTraceFile("traceLogs.txt");
-//      config.setTraceMessage(true);
-//      config.setPrettyPrintXml(true);
-//      System.out.println("AuthEndpoint: " +
-//                           config.getRestEndpoint());
-//      PartnerConnection connection = new PartnerConnection(config);
-//      System.out.println("SessionID: " + config.getSessionId());
-//      config.setRestEndpoint(bulkAuthEndPoint);
-//      bulkConnection = new BulkConnection(config);
-//      success = true;
-//    } catch (AsyncApiException aae) {
-//      aae.printStackTrace();
-//    } catch (ConnectionException ce) {
-//      ce.printStackTrace();
-//    } catch (FileNotFoundException fnfe) {
-//      fnfe.printStackTrace();
-//    }
-//    return success;
-//  }
+  @VisibleForTesting
+  List<String> doBulkQuery(BulkConnection bulkConnection) throws IOException, AsyncApiException, InterruptedException {
+    JobInfo job = new JobInfo();
+    job.setObject(config.object);
+    job.setOperation(OperationEnum.query);
+    job.setConcurrencyMode(ConcurrencyMode.Parallel);
+    job.setContentType(ContentType.CSV);
+    job = bulkConnection.createJob(job);
+    Preconditions.checkState(job.getId() != null);
+    job = bulkConnection.getJobStatus(job.getId());
+
+    String[] queryResults = null;
+    BatchInfo info;
+    try (ByteArrayInputStream bout =
+           new ByteArrayInputStream(config.query.getBytes())) {
+      info = bulkConnection.createBatchFromStream(job, bout);
+
+
+      for (int i = 0; i < 10000; i++) {
+        Thread.sleep(30000); //30 sec
+        info = bulkConnection.getBatchInfo(job.getId(),
+                                           info.getId());
+
+        if (info.getState() == BatchStateEnum.Completed) {
+          QueryResultList list = bulkConnection.getQueryResultList(job.getId(), info.getId());
+          queryResults = list.getResult();
+          break;
+        } else if (info.getState() == BatchStateEnum.Failed) {
+          System.out.println("-------------- failed ----------"
+                               + info);
+          break;
+        } else {
+          System.out.println("-------------- waiting ----------"
+                               + info);
+        }
+      }
+    }
+
+    List<String> results = new ArrayList<>();
+    if (queryResults != null) {
+      for (String resultId : queryResults) {
+        InputStream queryResultStream = bulkConnection.getQueryResultStream(job.getId(), info.getId(), resultId);
+        results.add(CharStreams.toString(new InputStreamReader(queryResultStream, Charsets.UTF_8)));
+      }
+    }
+    return results;
+  }
 
   @VisibleForTesting
-  String oauthLogin() throws Exception {
-    String url = "https://login.salesforce.com/services/oauth2/token";
+  AuthResponse oauthLogin() throws Exception {
     SslContextFactory sslContextFactory = new SslContextFactory();
     HttpClient httpClient = new HttpClient(sslContextFactory);
     try {
       httpClient.start();
-      return httpClient.POST(url).param("grant_type", "password")
+      String response = httpClient.POST(AUTH_URL).param("grant_type", "password")
         .param("client_id", config.clientId)
         .param("client_secret", config.clientSecret)
         .param("username", config.username)
         .param("password", config.password).send().getContentAsString();
+      return GSON.fromJson(response, AuthResponse.class);
     } finally {
       httpClient.stop();
     }
   }
 
   /**
+   * Create the BulkConnection used to call Bulk API operations.
+   */
+  @VisibleForTesting
+  BulkConnection getBulkConnection() throws Exception {
+    AuthResponse authResponse = oauthLogin();
+    ConnectorConfig connectorConfig = new ConnectorConfig();
+    connectorConfig.setSessionId(authResponse.getAccessToken());
+    // https://instance_name—api.salesforce.com/services/async/APIversion/job/jobid/batch
+    String restEndpoint = String.format("https://%s.salesforce.com/services/async/%s",
+                                        config.instance, config.apiVersion);
+    connectorConfig.setRestEndpoint(restEndpoint);
+    // This should only be false when doing debugging.
+    connectorConfig.setCompression(true);
+    // Set this to true to see HTTP requests and responses on stdout
+    connectorConfig.setTraceMessage(false);
+    return new BulkConnection(connectorConfig);
+  }
+
+  /**
    * Creates a Bulk API job and uploads batches for a CSV file.
    */
-  private void runSample(String sobjectType, String userName,
-                        String password, String sampleFileName)
-    throws AsyncApiException, IOException {
-    BulkConnection connection = getBulkConnection(userName, password);
+  private void runSample(String sobjectType, String sampleFileName)
+    throws Exception {
+    BulkConnection connection = getBulkConnection();
     JobInfo job = createJob(sobjectType, connection);
     List<BatchInfo> batchInfoList = createBatchesFromCSVFile(connection, job,
                                                              sampleFileName);
@@ -273,45 +339,10 @@ public class SalesforceBatchSource extends BatchSource {
   private JobInfo createJob(String sobjectType, BulkConnection connection) throws AsyncApiException {
     JobInfo job = new JobInfo();
     job.setObject(sobjectType);
-    job.setOperation(OperationEnum.insert);
-    job.setContentType(ContentType.CSV);
+    job.setOperation(OperationEnum.query);
     job = connection.createJob(job);
-    System.out.println(job);
     return job;
   }
-
-
-  /**
-   * Create the BulkConnection used to call Bulk API operations.
-   */
-  private BulkConnection getBulkConnection(String userName, String password) throws AsyncApiException {
-    ConnectorConfig partnerConfig = new ConnectorConfig();
-    partnerConfig.setUsername(userName);
-    partnerConfig.setPassword(password);
-    partnerConfig.setAuthEndpoint("https://login.salesforce.com/services/Soap/u/45.0");
-    // Creating the connection automatically handles login and stores
-    // the session in partnerConfig
-    // new PartnerConnection(partnerConfig);
-    // When PartnerConnection is instantiated, a login is implicitly
-    // executed and, if successful,
-    // a valid session is stored in the ConnectorConfig instance.
-    // Use this key to initialize a BulkConnection:
-    ConnectorConfig config = new ConnectorConfig();
-    config.setSessionId(partnerConfig.getSessionId());
-    // The endpoint for the Bulk API service is the same as for the normal
-    // SOAP uri until the /Soap/ part. From here it's '/async/versionNumber'
-    String soapEndpoint = partnerConfig.getServiceEndpoint();
-    String apiVersion = "45.0";
-    String restEndpoint = soapEndpoint.substring(0, soapEndpoint.indexOf("Soap/"))
-      + "async/" + apiVersion;
-    config.setRestEndpoint(restEndpoint);
-    // This should only be false when doing debugging.
-    config.setCompression(true);
-    // Set this to true to see HTTP requests and responses on stdout
-    config.setTraceMessage(false);
-    return new BulkConnection(config);
-  }
-
 
   /**
    * Create and upload batches using a CSV file.
@@ -395,6 +426,54 @@ public class SalesforceBatchSource extends BatchSource {
       } finally {
         tmpInputStream.close();
       }
+    }
+  }
+
+  @VisibleForTesting
+  static final class AuthResponse {
+    @SerializedName("access_token")
+    private final String accessToken;
+    @SerializedName("instance_url")
+    private final String instanceUrl;
+    private final String id;
+    @SerializedName("token_type")
+    private final String tokenType;
+    @SerializedName("issued_at")
+    private final String issuedAt;
+    private final String signature;
+
+    private AuthResponse(String accessToken, String instanceUrl, String id, String tokenType,
+                         String issuedAt, String signature) {
+      this.accessToken = accessToken;
+      this.instanceUrl = instanceUrl;
+      this.id = id;
+      this.tokenType = tokenType;
+      this.issuedAt = issuedAt;
+      this.signature = signature;
+    }
+
+    String getAccessToken() {
+      return accessToken;
+    }
+
+    String getInstanceUrl() {
+      return instanceUrl;
+    }
+
+    String getId() {
+      return id;
+    }
+
+    String getTokenType() {
+      return tokenType;
+    }
+
+    String getIssuedAt() {
+      return issuedAt;
+    }
+
+    String getSignature() {
+      return signature;
     }
   }
 }

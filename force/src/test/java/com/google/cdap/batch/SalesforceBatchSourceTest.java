@@ -16,11 +16,16 @@
 
 package com.google.cdap.batch;
 
+import com.sforce.async.BulkConnection;
 import org.junit.Test;
+
+import java.util.List;
 
 public class SalesforceBatchSourceTest {
   private static final String TOKEN =
     "6Cel800D1U0000010Ct88881U000001cX7sTvUbPvnJzjuzlcrD7xUTcsomWMYVObx0FGhTj4Uv958teCCStgDUvrDuqhFgIrlA1quDDaKt";
+  private static final String QUERY = "SELECT Name, Id, Description__c FROM Merchandise__c";
+  private static final String OBJECT = "Merchandise__c";
 
   @Test
   public void test() throws Exception {
@@ -28,7 +33,21 @@ public class SalesforceBatchSourceTest {
     String clientSecret = "129FFD7155B0837F615F1D18CB997F1F43B4D4B29E4D20AE3F3AF0D2E2B06097";
     String username = "bhooshan@cask.co";
     String password = "bdm@SF123";
-    SalesforceBatchSource sfsource = new SalesforceBatchSource(new SalesforceBatchSource.Config("input", clientId, clientSecret, username, password));
-    System.out.println(sfsource.oauthLogin());
+    String instance = "na85";
+    String object = "Account";
+    String query = "SELECT Name from Account";
+    SalesforceBatchSource sfsource = new SalesforceBatchSource(
+      new SalesforceBatchSource.Config("input", clientId, clientSecret, username, password, instance, object, query)
+    );
+    SalesforceBatchSource.AuthResponse authResponse = sfsource.oauthLogin();
+    System.out.println(authResponse.getAccessToken());
+    System.out.println(authResponse.getInstanceUrl());
+    System.out.println(authResponse.getTokenType());
+    System.out.println(authResponse.getId());
+    System.out.println(authResponse.getIssuedAt());
+    System.out.println(authResponse.getSignature());
+
+    BulkConnection bulkConnection = sfsource.getBulkConnection();
+    System.out.println(sfsource.doBulkQuery(bulkConnection));
   }
 }
