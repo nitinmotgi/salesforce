@@ -16,12 +16,15 @@
 
 package com.google.cdap.batch;
 
-import java.io.*;
-import java.util.*;
-
+import co.cask.cdap.api.annotation.Description;
+import co.cask.cdap.api.annotation.Macro;
+import co.cask.cdap.api.annotation.Name;
+import co.cask.cdap.api.annotation.Plugin;
 import co.cask.cdap.etl.api.Emitter;
 import co.cask.cdap.etl.api.batch.BatchContext;
 import co.cask.cdap.etl.api.batch.BatchSource;
+import co.cask.hydrator.common.ReferencePluginConfig;
+import com.google.common.annotations.VisibleForTesting;
 import com.sforce.async.AsyncApiException;
 import com.sforce.async.BatchInfo;
 import com.sforce.async.BatchStateEnum;
@@ -32,17 +35,146 @@ import com.sforce.async.JobInfo;
 import com.sforce.async.JobStateEnum;
 import com.sforce.async.OperationEnum;
 import com.sforce.ws.ConnectorConfig;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
+@Plugin(type = BatchSource.PLUGIN_TYPE)
+@Name(SalesforceBatchSource.NAME)
+@Description("PLugin to read data from Salesforce in batches.")
 public class SalesforceBatchSource extends BatchSource {
+  static final String NAME = "Salesforce";
+  private final Config config;
+
+  @VisibleForTesting
+  SalesforceBatchSource(Config config) {
+    this.config = config;
+  }
+
+  @VisibleForTesting
+  static final class Config extends ReferencePluginConfig {
+
+    @Description("Your Salesforce connected app's client ID")
+    @Macro
+    private final String clientId;
+
+    @Description("Your Salesforce connected app's client secret key")
+    @Macro
+    private final String clientSecret;
+
+    @Description("Your Salesforce username")
+    @Macro
+    private final String username;
+
+    @Description("Your Salesforce password")
+    @Macro
+    private final String password;
+
+    Config(String referenceName, String clientId, String clientSecret, String username, String password) {
+      super(referenceName);
+      this.clientId = clientId;
+      this.clientSecret = clientSecret;
+      this.username = username;
+      this.password = password;
+    }
+  }
 
 
-  public static void main(String[] args)
-    throws AsyncApiException, IOException {
-    SalesforceBatchSource example = new SalesforceBatchSource();
+  @Override
+  public void initialize(Object o) throws Exception {
+
+  }
+
+  @Override
+  public void prepareRun(BatchContext batchContext) throws Exception {
+
+  }
+
+  @Override
+  public void prepareRun(Object o) throws Exception {
+
+  }
+
+  @Override
+  public void onRunFinish(boolean b, Object o) {
+
+  }
+
+  @Override
+  public void transform(Object o, Emitter emitter) throws Exception {
+
+  }
+
+//  public boolean login() {
+//    boolean success = false;
+//
+//    String userId = getUserInput("UserID: ");
+//    String passwd = getUserInput("Password: ");
+//    String soapAuthEndPoint = "https://" + loginHost + soapService;
+//    String bulkAuthEndPoint = "https://" + loginHost + bulkService;
+//    try {
+//      ConnectorConfig config = new ConnectorConfig();
+//      config.setSessionId("Sfasd");
+//      config.setUsername(userId);
+//      config.setPassword(passwd);
+//      config.setAuthEndpoint(soapAuthEndPoint);
+//      config.setCompression(true);
+//      config.setTraceFile("traceLogs.txt");
+//      config.setTraceMessage(true);
+//      config.setPrettyPrintXml(true);
+//      System.out.println("AuthEndpoint: " +
+//                           config.getRestEndpoint());
+//      PartnerConnection connection = new PartnerConnection(config);
+//      System.out.println("SessionID: " + config.getSessionId());
+//      config.setRestEndpoint(bulkAuthEndPoint);
+//      bulkConnection = new BulkConnection(config);
+//      success = true;
+//    } catch (AsyncApiException aae) {
+//      aae.printStackTrace();
+//    } catch (ConnectionException ce) {
+//      ce.printStackTrace();
+//    } catch (FileNotFoundException fnfe) {
+//      fnfe.printStackTrace();
+//    }
+//    return success;
+//  }
+
+  @VisibleForTesting
+  String oauthLogin() throws Exception {
+    String url = "https://login.salesforce.com/services/oauth2/token";
+    SslContextFactory sslContextFactory = new SslContextFactory();
+    HttpClient httpClient = new HttpClient(sslContextFactory);
+    try {
+      httpClient.start();
+      return httpClient.POST(url).param("grant_type", "password")
+        .param("client_id", config.clientId)
+        .param("client_secret", config.clientSecret)
+        .param("username", config.username)
+        .param("password", config.password).send().getContentAsString();
+    } finally {
+      httpClient.stop();
+    }
+  }
+
+
+  public static void main(String[] args) throws Exception {
+    //SalesforceBatchSource example = new SalesforceBatchSource(config);
     // Replace arguments below with your credentials and test file name
     // The first parameter indicates that we are loading Account records
-    example.runSample("Account", "myUser@myOrg.com", "myPassword", "mySampleData.csv");
+    //example.runSample("Account", "myUser@myOrg.com", "myPassword", "mySampleData.csv");
   }
 
   /**
@@ -115,7 +247,7 @@ public class SalesforceBatchSource extends BatchSource {
                                List<BatchInfo> batchInfoList)
     throws AsyncApiException {
     long sleepTime = 0L;
-    Set<String> incomplete = new HashSet<String>();
+    Set<String> incomplete = new HashSet<>();
     for (BatchInfo bi : batchInfoList) {
       incomplete.add(bi.getId());
     }
@@ -203,7 +335,7 @@ public class SalesforceBatchSource extends BatchSource {
   private List<BatchInfo> createBatchesFromCSVFile(BulkConnection connection,
                                                    JobInfo jobInfo, String csvFileName)
     throws IOException, AsyncApiException {
-    List<BatchInfo> batchInfos = new ArrayList<BatchInfo>();
+    List<BatchInfo> batchInfos = new ArrayList<>();
     BufferedReader rdr = new BufferedReader(
       new InputStreamReader(new FileInputStream(csvFileName))
     );
@@ -275,31 +407,5 @@ public class SalesforceBatchSource extends BatchSource {
         tmpInputStream.close();
       }
     }
-  }
-
-
-  @Override
-  public void initialize(Object o) throws Exception {
-
-  }
-
-  @Override
-  public void prepareRun(BatchContext batchContext) throws Exception {
-
-  }
-
-  @Override
-  public void prepareRun(Object o) throws Exception {
-
-  }
-
-  @Override
-  public void onRunFinish(boolean b, Object o) {
-
-  }
-
-  @Override
-  public void transform(Object o, Emitter emitter) throws Exception {
-
   }
 }
