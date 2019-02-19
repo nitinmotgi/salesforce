@@ -14,20 +14,21 @@
  * the License.
  */
 
-package com.google.cdap.batch;
+package com.google.cdap;
 
-import co.cask.cdap.api.data.DatasetInstantiationException;
+import co.cask.cdap.api.TxRunnable;
 import co.cask.cdap.api.data.schema.Schema;
-import co.cask.cdap.api.dataset.Dataset;
 import co.cask.cdap.api.metadata.Metadata;
 import co.cask.cdap.api.metadata.MetadataEntity;
+import co.cask.cdap.api.metadata.MetadataException;
 import co.cask.cdap.api.metadata.MetadataScope;
 import co.cask.cdap.api.plugin.PluginProperties;
-import co.cask.cdap.etl.api.Arguments;
-import co.cask.cdap.etl.api.Lookup;
+import co.cask.cdap.api.security.store.SecureStoreData;
 import co.cask.cdap.etl.api.StageMetrics;
-import co.cask.cdap.etl.api.batch.BatchJoinerRuntimeContext;
+import co.cask.cdap.etl.api.action.ActionContext;
+import co.cask.cdap.etl.api.action.SettableArguments;
 import co.cask.cdap.etl.api.lineage.field.FieldOperation;
+import org.apache.tephra.TransactionFailureException;
 import org.junit.Test;
 
 import java.net.URL;
@@ -35,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-public class SalesforceBatchSourceTest {
+public class SalesforceToGCSActionTest {
 
   @Test
   public void test() throws Exception {
@@ -46,49 +47,48 @@ public class SalesforceBatchSourceTest {
     String instance = "na85";
     String object = "Account";
     String query = "SELECT Name from Account";
-    SalesforceBatchSource sfsource = new SalesforceBatchSource(
-      new SalesforceBatchSource.Config("input", clientId, clientSecret, username, password, instance, object, query)
-    );
-
-    sfsource.initialize(new BatchJoinerRuntimeContext() {
+    String bucket = "sf-bucket-bhooshan";
+    String subPath = "output.txt";
+    String project = "compute-engine-test";
+    String serviceAccountPath = "/Users/bhooshan/Documents/work/product/CDAP/gatekeeping/creds/compute-engine-test.json";
+    SalesforceToGCSAction.Config config =
+      new SalesforceToGCSAction.Config("input", clientId, clientSecret, username, password, instance,
+                                       object, query, project, serviceAccountPath, bucket, subPath, "45");
+    SalesforceToGCSAction action = new SalesforceToGCSAction(config);
+    action.run(new ActionContext() {
       @Override
-      public long getLogicalStartTime() {
-        return 0;
-      }
-
-      @Override
-      public <T extends Dataset> T getDataset(String s) throws DatasetInstantiationException {
+      public SettableArguments getArguments() {
         return null;
       }
 
       @Override
-      public <T extends Dataset> T getDataset(String s, String s1) throws DatasetInstantiationException {
+      public void execute(TxRunnable txRunnable) throws TransactionFailureException {
+
+      }
+
+      @Override
+      public void execute(int i, TxRunnable txRunnable) throws TransactionFailureException {
+
+      }
+
+      @Override
+      public Map<String, String> listSecureData(String s) throws Exception {
         return null;
       }
 
       @Override
-      public <T extends Dataset> T getDataset(String s, Map<String, String> map) throws DatasetInstantiationException {
+      public SecureStoreData getSecureData(String s, String s1) throws Exception {
         return null;
       }
 
       @Override
-      public <T extends Dataset> T getDataset(String s, String s1, Map<String, String> map) throws DatasetInstantiationException {
-        return null;
-      }
-
-      @Override
-      public void releaseDataset(Dataset dataset) {
+      public void putSecureData(String s, String s1, String s2, String s3, Map<String, String> map) throws Exception {
 
       }
 
       @Override
-      public void discardDataset(Dataset dataset) {
+      public void deleteSecureData(String s, String s1) throws Exception {
 
-      }
-
-      @Override
-      public <T> Lookup<T> provide(String s, Map<String, String> map) {
-        return null;
       }
 
       @Override
@@ -104,6 +104,11 @@ public class SalesforceBatchSourceTest {
       @Override
       public String getPipelineName() {
         return null;
+      }
+
+      @Override
+      public long getLogicalStartTime() {
+        return 0;
       }
 
       @Override
@@ -127,7 +132,7 @@ public class SalesforceBatchSourceTest {
       }
 
       @Override
-      public <T> T newPluginInstance(String s) {
+      public <T> T newPluginInstance(String s) throws InstantiationException {
         return null;
       }
 
@@ -153,11 +158,6 @@ public class SalesforceBatchSourceTest {
         return null;
       }
 
-      @Override
-      public Arguments getArguments() {
-        return null;
-      }
-
       @Nullable
       @Override
       public URL getServiceURL(String s, String s1) {
@@ -171,12 +171,12 @@ public class SalesforceBatchSourceTest {
       }
 
       @Override
-      public Map<MetadataScope, Metadata> getMetadata(MetadataEntity metadataEntity) {
+      public Map<MetadataScope, Metadata> getMetadata(MetadataEntity metadataEntity) throws MetadataException {
         return null;
       }
 
       @Override
-      public Metadata getMetadata(MetadataScope metadataScope, MetadataEntity metadataEntity) {
+      public Metadata getMetadata(MetadataScope metadataScope, MetadataEntity metadataEntity) throws MetadataException {
         return null;
       }
 
@@ -225,6 +225,5 @@ public class SalesforceBatchSourceTest {
 
       }
     });
-    System.out.println(sfsource.runBulkQuery());
   }
 }
