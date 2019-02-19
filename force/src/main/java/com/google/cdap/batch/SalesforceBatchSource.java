@@ -101,13 +101,13 @@ public class SalesforceBatchSource extends BatchSource<NullWritable, NullWritabl
     private final String query;
 
     Config(String referenceName, String clientId, String clientSecret,
-           String username, String password, String instance, String object, String query) {
-      this(referenceName, clientId, clientSecret, username, password, instance, object, query, "45");
+           String username, String password, String object, String query) {
+      this(referenceName, clientId, clientSecret, username, password, object, query, "45");
     }
 
     Config(String referenceName, String clientId, String clientSecret,
-           String username, String password, String instance, String object, String query, String apiVersion) {
-      super(referenceName, clientId, clientSecret, username, password, instance, object, apiVersion);
+           String username, String password, String object, String query, String apiVersion) {
+      super(referenceName, clientId, clientSecret, username, password, object, apiVersion);
       this.query = query;
     }
   }
@@ -233,8 +233,8 @@ public class SalesforceBatchSource extends BatchSource<NullWritable, NullWritabl
     ConnectorConfig connectorConfig = new ConnectorConfig();
     connectorConfig.setSessionId(authResponse.getAccessToken());
     // https://instance_name—api.salesforce.com/services/async/APIversion/job/jobid/batch
-    String restEndpoint = String.format("https://%s.salesforce.com/services/async/%s",
-                                        config.getInstance(), config.getApiVersion());
+    String restEndpoint = String.format("https://%s/services/async/%s",
+                                        authResponse.getInstanceUrl(), config.getApiVersion());
     connectorConfig.setRestEndpoint(restEndpoint);
     // This should only be false when doing debugging.
     connectorConfig.setCompression(true);

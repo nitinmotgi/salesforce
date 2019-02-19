@@ -114,9 +114,9 @@ public class SalesforceToGCSAction extends Action {
     }
 
     Config(String referenceName, String clientId, String clientSecret, String username, String password,
-           String instance, String object, String query, @Nullable String project, @Nullable String serviceAccountPath,
+           String object, String query, @Nullable String project, @Nullable String serviceAccountPath,
            String bucket, String subPath, @Nullable String apiVersion) {
-      super(referenceName, clientId, clientSecret, username, password, instance, object, apiVersion);
+      super(referenceName, clientId, clientSecret, username, password, object, apiVersion);
       this.query = query;
       this.project = project;
       this.serviceAccountPath = serviceAccountPath;
@@ -205,8 +205,8 @@ public class SalesforceToGCSAction extends Action {
     ConnectorConfig connectorConfig = new ConnectorConfig();
     connectorConfig.setSessionId(authResponse.getAccessToken());
     // https://instance_name—api.salesforce.com/services/async/APIversion/job/jobid/batch
-    String restEndpoint = String.format("https://%s.salesforce.com/services/async/%s",
-                                        config.getInstance(), config.getApiVersion());
+    String restEndpoint = String.format("https://%s/services/async/%s",
+                                        authResponse.getInstanceUrl(), config.getApiVersion());
     connectorConfig.setRestEndpoint(restEndpoint);
     // This should only be false when doing debugging.
     connectorConfig.setCompression(true);

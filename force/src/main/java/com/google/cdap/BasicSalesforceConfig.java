@@ -40,10 +40,6 @@ public class BasicSalesforceConfig extends ReferencePluginConfig {
   @Macro
   private String password;
 
-  @Description("The Salesforce instance name")
-  @Macro
-  private String instance;
-
   @Description("The Salesforce object to read from")
   @Macro
   private String object;
@@ -59,13 +55,12 @@ public class BasicSalesforceConfig extends ReferencePluginConfig {
   }
 
   public BasicSalesforceConfig(String referenceName, String clientId, String clientSecret,
-                               String username, String password, String instance, String object, String apiVersion) {
+                               String username, String password, String object, String apiVersion) {
     super(referenceName);
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.username = username;
     this.password = password;
-    this.instance = instance;
     this.object = object;
     this.apiVersion = apiVersion;
   }
@@ -84,10 +79,6 @@ public class BasicSalesforceConfig extends ReferencePluginConfig {
 
   public String getPassword() {
     return password;
-  }
-
-  public String getInstance() {
-    return instance;
   }
 
   public String getObject() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc. All Rights Reserved.
+ * Copyright 2019 Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -44,7 +44,6 @@ public class SalesforceToGCSActionTest {
     String clientSecret = "129FFD7155B0837F615F1D18CB997F1F43B4D4B29E4D20AE3F3AF0D2E2B06097";
     String username = "bhooshan@cask.co";
     String password = "bdm@SF123";
-    String instance = "na85";
     String object = "Account";
     String query = "SELECT Name from Account";
     String bucket = "sf-bucket-bhooshan";
@@ -52,7 +51,7 @@ public class SalesforceToGCSActionTest {
     String project = "compute-engine-test";
     String serviceAccountPath = "/Users/bhooshan/Documents/work/product/CDAP/gatekeeping/creds/compute-engine-test.json";
     SalesforceToGCSAction.Config config =
-      new SalesforceToGCSAction.Config("input", clientId, clientSecret, username, password, instance,
+      new SalesforceToGCSAction.Config("input", clientId, clientSecret, username, password,
                                        object, query, project, serviceAccountPath, bucket, subPath, "45");
     SalesforceToGCSAction action = new SalesforceToGCSAction(config);
     action.run(new ActionContext() {
