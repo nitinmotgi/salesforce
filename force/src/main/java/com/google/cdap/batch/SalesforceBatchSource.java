@@ -233,8 +233,7 @@ public class SalesforceBatchSource extends BatchSource<NullWritable, NullWritabl
     ConnectorConfig connectorConfig = new ConnectorConfig();
     connectorConfig.setSessionId(authResponse.getAccessToken());
     // https://instance_name—api.salesforce.com/services/async/APIversion/job/jobid/batch
-    String restEndpoint = String.format("https://%s/services/async/%s",
-                                        authResponse.getInstanceUrl(), config.getApiVersion());
+    String restEndpoint = String.format("%s/services/async/%s", authResponse.getInstanceUrl(), config.getApiVersion());
     connectorConfig.setRestEndpoint(restEndpoint);
     // This should only be false when doing debugging.
     connectorConfig.setCompression(true);
