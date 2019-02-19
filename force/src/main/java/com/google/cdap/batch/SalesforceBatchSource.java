@@ -153,6 +153,7 @@ public class SalesforceBatchSource extends BatchSource<NullWritable, NullWritabl
     }
   }
 
+  // TODO: Move the following code to a common place to share with Action
   /**
    * Create a new job using the Bulk API.
    *
