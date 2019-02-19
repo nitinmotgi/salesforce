@@ -129,7 +129,8 @@ public class SalesforceBatchSource extends BatchSource<NullWritable, NullWritabl
   }
 
   @Override
-  public void transform(KeyValue<NullWritable, NullWritable> input, Emitter<StructuredRecord> emitter) throws Exception {
+  public void transform(KeyValue<NullWritable, NullWritable> input,
+                        Emitter<StructuredRecord> emitter) throws Exception {
     List<String> results = runBulkQuery();
     for (String result : results) {
       for (String eachResult : result.split("\n")) {

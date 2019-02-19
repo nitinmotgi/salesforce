@@ -181,7 +181,7 @@ public class SalesforceToGCSAction extends Action {
   private Storage createStorage() throws IOException, GeneralSecurityException {
     HttpTransport transport = GoogleNetHttpTransport.newTrustedTransport();
     JsonFactory jsonFactory = new JacksonFactory();
-    GoogleCredential credential = GoogleCredential.fromStream( new FileInputStream(new File(config.serviceAccountPath)));
+    GoogleCredential credential = GoogleCredential.fromStream(new FileInputStream(new File(config.serviceAccountPath)));
 
     // Depending on the environment that provides the default credentials (for
     // example: Compute Engine, App Engine), the credentials may require us to
