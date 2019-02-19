@@ -29,14 +29,10 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson.JacksonFactory;
+import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.StorageScopes;
 import com.google.api.services.storage.model.StorageObject;
-import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.ServiceOptions;
-import com.google.cloud.WriteChannel;
-import com.google.cloud.storage.BlobInfo;
-import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.StorageOptions;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.io.CharStreams;
@@ -62,7 +58,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -162,11 +157,11 @@ public class SalesforceToGCSAction extends Action {
     JobInfo job = createJob(bulkConnection);
     List<String> results = runBulkQuery(bulkConnection, job);
     for (String result : results) {
-      write1(result);
+      write(result);
     }
   }
 
-  private void write1(String data) throws IOException, GeneralSecurityException {
+  private void write(String data) throws IOException, GeneralSecurityException {
     InputStream is = new ByteArrayInputStream(data.getBytes(Charsets.UTF_8));
     InputStreamContent contentStream = new InputStreamContent("application/text", is);
     // Setting the length improves upload performance
@@ -176,15 +171,14 @@ public class SalesforceToGCSAction extends Action {
       .setName(config.subPath);
 
     // Do the insert
-    com.google.api.services.storage.Storage client = createService();
-    com.google.api.services.storage.Storage.Objects.Insert insertRequest =
-      client.objects().insert(config.bucket, objectMetadata, contentStream);
+    Storage client = createStorage();
+    Storage.Objects.Insert insertRequest = client.objects().insert(config.bucket, objectMetadata, contentStream);
 
     insertRequest.execute();
 
   }
 
-  private com.google.api.services.storage.Storage createService() throws IOException, GeneralSecurityException {
+  private Storage createStorage() throws IOException, GeneralSecurityException {
     HttpTransport transport = GoogleNetHttpTransport.newTrustedTransport();
     JsonFactory jsonFactory = new JacksonFactory();
     GoogleCredential credential = GoogleCredential.fromStream( new FileInputStream(new File(config.serviceAccountPath)));
@@ -201,22 +195,6 @@ public class SalesforceToGCSAction extends Action {
     return new com.google.api.services.storage.Storage.Builder(transport, jsonFactory, credential)
       .setApplicationName("GCS Samples")
       .build();
-  }
-
-
-  private void write(String data) throws IOException {
-    Storage storage = createStorage();
-    BlobInfo blob = BlobInfo.newBuilder(config.bucket, config.subPath).setContentType("application/text").build();
-    WriteChannel writer = storage.writer(blob);
-    writer.write(ByteBuffer.wrap(data.getBytes(Charsets.UTF_8)));
-  }
-
-  private Storage createStorage() throws IOException {
-    StorageOptions.Builder builder = StorageOptions.newBuilder().setProjectId(config.project);
-    if (config.serviceAccountPath != null) {
-      builder.setCredentials(loadServiceAccountCredentials(config.serviceAccountPath));
-    }
-    return builder.build().getService();
   }
 
   /**
@@ -302,12 +280,5 @@ public class SalesforceToGCSAction extends Action {
       }
     }
     return results;
-  }
-
-  private ServiceAccountCredentials loadServiceAccountCredentials(String path) throws IOException {
-    File credentialsPath = new File(path);
-    try (FileInputStream serviceAccountStream = new FileInputStream(credentialsPath)) {
-      return ServiceAccountCredentials.fromStream(serviceAccountStream);
-    }
   }
 }
