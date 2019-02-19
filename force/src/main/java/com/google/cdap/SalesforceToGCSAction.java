@@ -53,6 +53,8 @@ import com.sforce.async.QueryResultList;
 import com.sforce.ws.ConnectorConfig;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -72,6 +74,7 @@ import javax.annotation.Nullable;
 @Description("Downloads Salesforce data to GCS based on the provided query")
 public class SalesforceToGCSAction extends Action {
   static final String NAME = "SalesforceToGCS";
+  private static final Logger LOG = LoggerFactory.getLogger(SalesforceToGCSAction.class);
   private static final Gson GSON = new Gson();
   private static final String AUTH_URL = "https://login.salesforce.com/services/oauth2/token";
 
@@ -86,7 +89,7 @@ public class SalesforceToGCSAction extends Action {
 
     @Description("The SOQL query to retrieve results for")
     @Macro
-    private final String query;
+    private String query;
 
     @Description("Google Cloud Project ID, which uniquely identifies a project. "
       + "It can be found on the Dashboard in the Google Cloud Platform Console.")
@@ -100,6 +103,31 @@ public class SalesforceToGCSAction extends Action {
     @Macro
     @Nullable
     private String serviceAccountPath;
+
+    @Description("The GCS bucket to upload data to. If it does not exist, a new bucket will be created.")
+    @Macro
+    private String bucket;
+
+    @Description("The path to the file to create in the specified bucket.")
+    @Macro
+    private String subPath;
+
+    Config() {
+      super();
+      project = AUTO_DETECT;
+      serviceAccountPath = AUTO_DETECT;
+    }
+
+    Config(String referenceName, String clientId, String clientSecret, String username, String password,
+           String instance, String object, String query, @Nullable String project, @Nullable String serviceAccountPath,
+           String bucket, String subPath, @Nullable String apiVersion) {
+      super(referenceName, clientId, clientSecret, username, password, instance, object, apiVersion);
+      this.query = query;
+      this.project = project;
+      this.serviceAccountPath = serviceAccountPath;
+      this.bucket = bucket;
+      this.subPath = subPath;
+    }
 
     public String getProject() {
       String projectId = project;
@@ -120,31 +148,6 @@ public class SalesforceToGCSAction extends Action {
         return null;
       }
       return serviceAccountPath;
-    }
-
-    @Description("The GCS bucket to upload data to. If it does not exist, a new bucket will be created.")
-    @Macro
-    private final String bucket;
-
-    @Description("The path to the file to create in the specified bucket.")
-    @Macro
-    private final String subPath;
-
-    Config(String referenceName, String clientId, String clientSecret, String username, String password,
-           String instance, String object, String query, String bucket, String subPath) {
-      this(referenceName, clientId, clientSecret, username, password, instance, object, query, AUTO_DETECT, null,
-           bucket, subPath, "45");
-    }
-
-    Config(String referenceName, String clientId, String clientSecret, String username, String password,
-           String instance, String object, String query, String project, String serviceAccountPath, String bucket,
-           String subPath, String apiVersion) {
-      super(referenceName, clientId, clientSecret, username, password, instance, object, apiVersion);
-      this.query = query;
-      this.project = project;
-      this.serviceAccountPath = serviceAccountPath;
-      this.bucket = bucket;
-      this.subPath = subPath;
     }
   }
 
@@ -171,8 +174,6 @@ public class SalesforceToGCSAction extends Action {
     StorageObject objectMetadata = new StorageObject()
       // Set the destination object name
       .setName(config.subPath);
-      // Set the access control list to publicly read-only
-//      .setAcl(Collections.singletonList(new ObjectAccessControl().setEntity("allUsers").setRole("READER")));
 
     // Do the insert
     com.google.api.services.storage.Storage client = createService();
@@ -187,7 +188,6 @@ public class SalesforceToGCSAction extends Action {
     HttpTransport transport = GoogleNetHttpTransport.newTrustedTransport();
     JsonFactory jsonFactory = new JacksonFactory();
     GoogleCredential credential = GoogleCredential.fromStream( new FileInputStream(new File(config.serviceAccountPath)));
-      //GoogleCredential.getApplicationDefault(transport, jsonFactory);
 
     // Depending on the environment that provides the default credentials (for
     // example: Compute Engine, App Engine), the credentials may require us to
@@ -275,27 +275,21 @@ public class SalesforceToGCSAction extends Action {
                                     JobInfo job) throws IOException, AsyncApiException, InterruptedException {
     String[] queryResults = null;
     BatchInfo info;
-    try (ByteArrayInputStream bout =
-           new ByteArrayInputStream(config.query.getBytes())) {
+    try (ByteArrayInputStream bout = new ByteArrayInputStream(config.query.getBytes())) {
       info = bulkConnection.createBatchFromStream(job, bout);
-
 
       for (int i = 0; i < 10000; i++) {
         Thread.sleep(30000); //30 sec
-        info = bulkConnection.getBatchInfo(job.getId(),
-                                           info.getId());
-
-        if (info.getState() == BatchStateEnum.Completed) {
+        info = bulkConnection.getBatchInfo(job.getId(), info.getId());
+        if (BatchStateEnum.Completed == info.getState()) {
           QueryResultList list = bulkConnection.getQueryResultList(job.getId(), info.getId());
           queryResults = list.getResult();
           break;
-        } else if (info.getState() == BatchStateEnum.Failed) {
-          System.out.println("-------------- failed ----------"
-                               + info);
+        } else if (BatchStateEnum.Failed == info.getState()) {
+          LOG.error("Failed " + info);
           break;
         } else {
-          System.out.println("-------------- waiting ----------"
-                               + info);
+          LOG.debug("Waiting " + info);
         }
       }
     }

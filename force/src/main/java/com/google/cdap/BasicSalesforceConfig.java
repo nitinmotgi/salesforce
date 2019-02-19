@@ -26,36 +26,36 @@ public class BasicSalesforceConfig extends ReferencePluginConfig {
 
   @Description("Your Salesforce connected app's client ID")
   @Macro
-  private final String clientId;
+  private String clientId;
 
   @Description("Your Salesforce connected app's client secret key")
   @Macro
-  private final String clientSecret;
+  private String clientSecret;
 
   @Description("Your Salesforce username")
   @Macro
-  private final String username;
+  private String username;
 
   @Description("Your Salesforce password")
   @Macro
-  private final String password;
+  private String password;
 
   @Description("The Salesforce instance name")
   @Macro
-  private final String instance;
+  private String instance;
 
   @Description("The Salesforce object to read from")
   @Macro
-  private final String object;
+  private String object;
 
   @Description("The Force API version to use. Defaults to 45.")
   @Nullable
   @Macro
   private final String apiVersion;
 
-  public BasicSalesforceConfig(String referenceName, String clientId, String clientSecret,
-                               String username, String password, String instance, String object) {
-    this(referenceName, clientId, clientSecret, username, password, instance, object, "45");
+  BasicSalesforceConfig() {
+    super("input");
+    this.apiVersion = "45.0";
   }
 
   public BasicSalesforceConfig(String referenceName, String clientId, String clientSecret,
