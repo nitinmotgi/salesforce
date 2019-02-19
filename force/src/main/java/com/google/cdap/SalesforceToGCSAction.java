@@ -254,9 +254,7 @@ public class SalesforceToGCSAction extends Action {
     BatchInfo info;
     try (ByteArrayInputStream bout = new ByteArrayInputStream(config.query.getBytes())) {
       info = bulkConnection.createBatchFromStream(job, bout);
-
       for (int i = 0; i < 10000; i++) {
-        Thread.sleep(30000); //30 sec
         info = bulkConnection.getBatchInfo(job.getId(), info.getId());
         if (BatchStateEnum.Completed == info.getState()) {
           QueryResultList list = bulkConnection.getQueryResultList(job.getId(), info.getId());
