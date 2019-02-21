@@ -1,0 +1,89 @@
+{
+  "metadata": {
+    "spec-version": "1.5"
+  },
+  "configuration-groups": [
+    {
+      "label": "Reference",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Reference Name",
+          "name": "referenceName"
+        }
+      ]
+    },
+    {
+      "label": "Salesforce",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Client ID",
+          "name": "clientId"
+        },
+        {
+          "widget-type": "password",
+          "label": "Client Secret",
+          "name": "clientSecret"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Username",
+          "name": "username"
+        },
+        {
+          "widget-type": "password",
+          "label": "Password",
+          "name": "password"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Object",
+          "name": "object"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "API Version",
+          "name": "apiVersion",
+          "widget-attributes" : {
+            "placeholder": "36.0"
+          }
+        },
+        {
+          "widget-type": "textarea",
+          "label": "Query",
+          "name": "query"
+        }
+      ]
+    },
+    {
+      "label": "GCP",
+      "properties": [
+        {
+          "widget-type": "textbox",
+          "label": "Bucket",
+          "name": "bucket"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Path",
+          "name": "subPath"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Project",
+          "name": "project",
+          "widget-attributes" : {
+            "placeholder": "auto-detect"
+          }
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Service Account File Path",
+          "name": "serviceAccountPath"
+        }
+      ]
+    }
+  ],
+  "outputs": []
+}

@@ -22,7 +22,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>force</artifactId>
+  <artifactId>salesforce-plugins</artifactId>
   <name>Force API Integration</name>
 
   <dependencies>
@@ -169,6 +169,34 @@
       <version>${cdap.version}</version>
       <scope>test</scope>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/com.force.api/force-wsc -->
+    <dependency>
+      <groupId>com.force.api</groupId>
+      <artifactId>force-wsc</artifactId>
+      <version>22.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-storage</artifactId>
+      <version>1.17.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-mapreduce-client-core</artifactId>
+      <version>${hadoop.version}</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.codehaus.jackson/jackson-core-asl -->
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-core-asl</artifactId>
+      <version>1.9.13</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>2.9.8</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -189,7 +217,13 @@
             <Embed-Transitive>true</Embed-Transitive>
             <Embed-Directory>lib</Embed-Directory>
             <!--Only @Plugin classes in the export packages will be included as plugin-->
-            <_exportcontents>com.google.cdap.*</_exportcontents>
+            <_exportcontents>
+              co.cask.cdap.etl.api.action.*;
+              com.google.cdap.*;
+              org.codehaus.jackson.*;
+              com.google.cloud.*;
+              com.fasterxml.jackson.core.*
+            </_exportcontents>
           </instructions>
         </configuration>
         <executions>
@@ -207,7 +241,8 @@
         <version>1.0.1</version>
         <configuration>
           <cdapArtifacts>
-            <parent>system:cdap-data-streams[4.0.0,6.0.0-SNAPSHOT)</parent>
+            <parent>system:cdap-data-pipeline[4.0.0,7.0.0-SNAPSHOT)</parent>
+            <parent>system:cdap-data-streams[4.0.0,7.0.0-SNAPSHOT)</parent>
           </cdapArtifacts>
         </configuration>
         <executions>
