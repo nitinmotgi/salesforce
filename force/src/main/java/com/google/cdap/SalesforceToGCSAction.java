@@ -34,32 +34,15 @@ import com.google.api.services.storage.StorageScopes;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.cloud.ServiceOptions;
 import com.google.common.base.Charsets;
-import com.google.common.base.Preconditions;
-import com.google.common.io.CharStreams;
-import com.google.gson.Gson;
-import com.sforce.async.AsyncApiException;
-import com.sforce.async.BatchInfo;
-import com.sforce.async.BatchStateEnum;
 import com.sforce.async.BulkConnection;
-import com.sforce.async.ConcurrencyMode;
-import com.sforce.async.ContentType;
 import com.sforce.async.JobInfo;
-import com.sforce.async.OperationEnum;
-import com.sforce.async.QueryResultList;
-import com.sforce.ws.ConnectorConfig;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -69,9 +52,6 @@ import javax.annotation.Nullable;
 @Description("Downloads Salesforce data to GCS based on the provided query")
 public class SalesforceToGCSAction extends Action {
   static final String NAME = "SalesforceToGCS";
-  private static final Logger LOG = LoggerFactory.getLogger(SalesforceToGCSAction.class);
-  private static final Gson GSON = new Gson();
-  private static final String AUTH_URL = "https://login.salesforce.com/services/oauth2/token";
 
   private final Config config;
 
@@ -153,9 +133,11 @@ public class SalesforceToGCSAction extends Action {
 
   @Override
   public void run(ActionContext actionContext) throws Exception {
-    BulkConnection bulkConnection = getBulkConnection();
-    JobInfo job = createJob(bulkConnection);
-    List<String> results = runBulkQuery(bulkConnection, job);
+    BulkConnection bulkConnection = SalesforceBulkAPIs.getBulkConnection(config.getClientId(), config.getClientSecret(),
+                                                                         config.getUsername(), config.getPassword(),
+                                                                         config.getApiVersion());
+    JobInfo job = SalesforceBulkAPIs.createJob(config.getObject(), bulkConnection);
+    List<String> results = SalesforceBulkAPIs.runBulkQuery(config.query, bulkConnection, job);
     for (String result : results) {
       write(result);
     }
@@ -195,87 +177,5 @@ public class SalesforceToGCSAction extends Action {
     return new com.google.api.services.storage.Storage.Builder(transport, jsonFactory, credential)
       .setApplicationName("GCS Samples")
       .build();
-  }
-
-  /**
-   * Create the BulkConnection used to call Bulk API operations.
-   */
-  private BulkConnection getBulkConnection() throws Exception {
-    AuthResponse authResponse = oauthLogin();
-    ConnectorConfig connectorConfig = new ConnectorConfig();
-    connectorConfig.setSessionId(authResponse.getAccessToken());
-    // https://instance_name—api.salesforce.com/services/async/APIversion/job/jobid/batch
-    String restEndpoint = String.format("%s/services/async/%s", authResponse.getInstanceUrl(), config.getApiVersion());
-    connectorConfig.setRestEndpoint(restEndpoint);
-    // This should only be false when doing debugging.
-    connectorConfig.setCompression(true);
-    // Set this to true to see HTTP requests and responses on stdout
-    connectorConfig.setTraceMessage(false);
-    return new BulkConnection(connectorConfig);
-  }
-
-  private AuthResponse oauthLogin() throws Exception {
-    SslContextFactory sslContextFactory = new SslContextFactory();
-    HttpClient httpClient = new HttpClient(sslContextFactory);
-    try {
-      httpClient.start();
-      String response = httpClient.POST(AUTH_URL).param("grant_type", "password")
-        .param("client_id", config.getClientId())
-        .param("client_secret", config.getClientSecret())
-        .param("username", config.getUsername())
-        .param("password", config.getPassword()).send().getContentAsString();
-      return GSON.fromJson(response, AuthResponse.class);
-    } finally {
-      httpClient.stop();
-    }
-  }
-
-  /**
-   * Create a new job using the Bulk API.
-   *
-   * @return The JobInfo for the new job.
-   * @throws AsyncApiException if there is an issue creating the job
-   */
-  private JobInfo createJob(BulkConnection bulkConnection) throws AsyncApiException {
-    JobInfo job = new JobInfo();
-    job.setObject(config.getObject());
-    job.setOperation(OperationEnum.query);
-    job.setConcurrencyMode(ConcurrencyMode.Parallel);
-    job.setContentType(ContentType.CSV);
-    job = bulkConnection.createJob(job);
-    Preconditions.checkState(job.getId() != null, "Couldn't get job ID. Perhaps there was a problem in creating the " +
-      "batch job");
-    return bulkConnection.getJobStatus(job.getId());
-  }
-
-  private List<String> runBulkQuery(BulkConnection bulkConnection,
-                                    JobInfo job) throws IOException, AsyncApiException, InterruptedException {
-    String[] queryResults = null;
-    BatchInfo info;
-    try (ByteArrayInputStream bout = new ByteArrayInputStream(config.query.getBytes())) {
-      info = bulkConnection.createBatchFromStream(job, bout);
-      for (int i = 0; i < 10000; i++) {
-        info = bulkConnection.getBatchInfo(job.getId(), info.getId());
-        if (BatchStateEnum.Completed == info.getState()) {
-          QueryResultList list = bulkConnection.getQueryResultList(job.getId(), info.getId());
-          queryResults = list.getResult();
-          break;
-        } else if (BatchStateEnum.Failed == info.getState()) {
-          LOG.error("Failed " + info);
-          break;
-        } else {
-          LOG.debug("Waiting " + info);
-        }
-      }
-    }
-
-    List<String> results = new ArrayList<>();
-    if (queryResults != null) {
-      for (String resultId : queryResults) {
-        InputStream queryResultStream = bulkConnection.getQueryResultStream(job.getId(), info.getId(), resultId);
-        results.add(CharStreams.toString(new InputStreamReader(queryResultStream, Charsets.UTF_8)));
-      }
-    }
-    return results;
   }
 }
