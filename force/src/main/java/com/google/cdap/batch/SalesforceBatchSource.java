@@ -69,6 +69,9 @@ import java.util.List;
 import java.util.Map;
 
 
+/**
+ * TODO: Does not work yet
+ */
 @Plugin(type = BatchSource.PLUGIN_TYPE)
 @Name(SalesforceBatchSource.NAME)
 @Description("PLugin to read data from Salesforce in batches.")
