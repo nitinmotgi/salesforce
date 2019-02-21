@@ -38,11 +38,6 @@
         },
         {
           "widget-type": "textbox",
-          "label": "Instance",
-          "name": "instance"
-        },
-        {
-          "widget-type": "textbox",
           "label": "Object",
           "name": "object"
         },
