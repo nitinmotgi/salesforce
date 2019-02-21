@@ -218,6 +218,7 @@
             <Embed-Directory>lib</Embed-Directory>
             <!--Only @Plugin classes in the export packages will be included as plugin-->
             <_exportcontents>
+              co.cask.cdap.etl.api.action.*;
               com.google.cdap.*;
               org.codehaus.jackson.*;
               com.google.cloud.*;
