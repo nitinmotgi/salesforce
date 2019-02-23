@@ -176,11 +176,6 @@ public class SalesforceToGCSAction extends Action {
       credential = credential.createScoped(scopes);
     }
 
-//    StorageOptions.Builder builder = StorageOptions.newBuilder().setProjectId(config.getProject());
-//    if (config.getServiceAccountFilePath() != null) {
-//      builder.setCredentials(GCPUtils.loadServiceAccountCredentials(serviceAccountPath));
-//    }
-//    Storage storage = builder.build().getService();
     return new Storage.Builder(transport, jsonFactory, credential)
       .setApplicationName("GCS Samples")
       .build();
