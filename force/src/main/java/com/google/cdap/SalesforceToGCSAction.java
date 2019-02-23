@@ -33,6 +33,7 @@ import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.StorageScopes;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.cloud.ServiceOptions;
+import com.google.cloud.storage.StorageOptions;
 import com.google.common.base.Charsets;
 import com.sforce.async.BulkConnection;
 import com.sforce.async.JobInfo;
@@ -117,7 +118,7 @@ public class SalesforceToGCSAction extends Action {
     }
 
     @Nullable
-    public String getServiceAccountFilePath() {
+    String getServiceAccountFilePath() {
       if (containsMacro("serviceAccountPath") || serviceAccountPath == null ||
         serviceAccountPath.isEmpty() || AUTO_DETECT.equals(serviceAccountPath)) {
         return null;
@@ -157,13 +158,14 @@ public class SalesforceToGCSAction extends Action {
     Storage.Objects.Insert insertRequest = client.objects().insert(config.bucket, objectMetadata, contentStream);
 
     insertRequest.execute();
-
   }
 
   private Storage createStorage() throws IOException, GeneralSecurityException {
     HttpTransport transport = GoogleNetHttpTransport.newTrustedTransport();
     JsonFactory jsonFactory = new JacksonFactory();
-    GoogleCredential credential = GoogleCredential.fromStream(new FileInputStream(new File(config.serviceAccountPath)));
+    GoogleCredential credential = config.getServiceAccountFilePath() != null ?
+      GoogleCredential.fromStream(new FileInputStream(new File(config.getServiceAccountFilePath()))) :
+      GoogleCredential.getApplicationDefault(transport, jsonFactory);
 
     // Depending on the environment that provides the default credentials (for
     // example: Compute Engine, App Engine), the credentials may require us to
@@ -174,7 +176,7 @@ public class SalesforceToGCSAction extends Action {
       credential = credential.createScoped(scopes);
     }
 
-    return new com.google.api.services.storage.Storage.Builder(transport, jsonFactory, credential)
+    return new Storage.Builder(transport, jsonFactory, credential)
       .setApplicationName("GCS Samples")
       .build();
   }
