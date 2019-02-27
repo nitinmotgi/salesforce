@@ -49,13 +49,20 @@ public class BasicSalesforceConfig extends ReferencePluginConfig {
   @Macro
   private final String apiVersion;
 
+  @Description("The Login URL to use to authenticate to Salesforce. Defaults to " +
+    "https://login.salesforce.com/services/oauth2/token")
+  @Nullable
+  @Macro
+  private final String loginUrl;
+
   BasicSalesforceConfig() {
     super("input");
     this.apiVersion = "45.0";
+    this.loginUrl = "https://login.salesforce.com/services/oauth2/token";
   }
 
-  public BasicSalesforceConfig(String referenceName, String clientId, String clientSecret,
-                               String username, String password, String object, String apiVersion) {
+  public BasicSalesforceConfig(String referenceName, String clientId, String clientSecret, String username,
+                               String password, String object, @Nullable String apiVersion, @Nullable String loginUrl) {
     super(referenceName);
     this.clientId = clientId;
     this.clientSecret = clientSecret;
@@ -63,6 +70,7 @@ public class BasicSalesforceConfig extends ReferencePluginConfig {
     this.password = password;
     this.object = object;
     this.apiVersion = apiVersion;
+    this.loginUrl = loginUrl;
   }
 
   public String getClientId() {
@@ -88,5 +96,10 @@ public class BasicSalesforceConfig extends ReferencePluginConfig {
   @Nullable
   public String getApiVersion() {
     return apiVersion;
+  }
+
+  @Nullable
+  public String getLoginUrl() {
+    return loginUrl;
   }
 }

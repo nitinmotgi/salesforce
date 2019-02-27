@@ -40,7 +40,9 @@ Salesforce UI.
 
 **Object**: The Salesforce object to retrieve data from
 
-**API Version**: The Salesforce Developer API version. Defaults to 45.0
+**API Version**: The Salesforce Developer API version. Defaults to 45.0.
+
+**Login URL**: The URL to use to authenticate to Salesforce. Defaults to https://login.salesforce.com/services/oauth2/token.
 
 **Query**: The SOQL query to use to retrieve data.
 

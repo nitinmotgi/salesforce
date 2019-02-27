@@ -53,6 +53,14 @@
           "widget-type": "textarea",
           "label": "Query",
           "name": "query"
+        },
+        {
+          "widget-type": "textbox",
+          "label": "Login URL",
+          "name": "loginUrl",
+          "widget-attributes" : {
+            "placeholder": "https://login.salesforce.com/services/oauth2/token"
+          }
         }
       ]
     },
