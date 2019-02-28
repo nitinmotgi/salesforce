@@ -84,12 +84,13 @@ public class SalesforceBatchSource extends BatchSource<NullWritable, NullWritabl
 
     Config(String referenceName, String clientId, String clientSecret,
            String username, String password, String object, String query) {
-      this(referenceName, clientId, clientSecret, username, password, object, query, "45");
+      this(referenceName, clientId, clientSecret, username, password, object, query,
+           "45", "https://login.salesforce.com/services/oauth2/token");
     }
 
-    Config(String referenceName, String clientId, String clientSecret,
-           String username, String password, String object, String query, String apiVersion) {
-      super(referenceName, clientId, clientSecret, username, password, object, apiVersion);
+    Config(String referenceName, String clientId, String clientSecret, String username, String password,
+           String object, String query, String apiVersion, String loginUrl) {
+      super(referenceName, clientId, clientSecret, username, password, object, apiVersion, loginUrl);
       this.query = query;
     }
   }
@@ -106,9 +107,9 @@ public class SalesforceBatchSource extends BatchSource<NullWritable, NullWritabl
 
   @Override
   public void initialize(BatchRuntimeContext context) throws Exception {
-    bulkConnection = SalesforceBulkAPIs.getBulkConnection(config.getClientId(), config.getClientSecret(),
-                                                          config.getUsername(), config.getPassword(),
-                                                          config.getApiVersion());
+    bulkConnection = SalesforceBulkAPIs.getBulkConnection(config.getLoginUrl(), config.getClientId(),
+                                                          config.getClientSecret(), config.getUsername(),
+                                                          config.getPassword(), config.getApiVersion());
     job = SalesforceBulkAPIs.createJob(config.getObject(), bulkConnection);
   }
 

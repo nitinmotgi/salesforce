@@ -46,7 +46,6 @@ public final class SalesforceBulkAPIs {
 
   private static final Logger LOG = LoggerFactory.getLogger(SalesforceBulkAPIs.class);
   private static final Gson GSON = new Gson();
-  private static final String AUTH_URL = "https://login.salesforce.com/services/oauth2/token";
 
   private SalesforceBulkAPIs() {
   }
@@ -54,9 +53,9 @@ public final class SalesforceBulkAPIs {
   /**
    * Create the BulkConnection used to call Bulk API operations.
    */
-  public static BulkConnection getBulkConnection(String clientId, String clientSecret,
+  public static BulkConnection getBulkConnection(String loginUrl, String clientId, String clientSecret,
                                                  String username, String password, String apiVersion) throws Exception {
-    AuthResponse authResponse = oauthLogin(clientId, clientSecret, username, password);
+    AuthResponse authResponse = oauthLogin(loginUrl, clientId, clientSecret, username, password);
     ConnectorConfig connectorConfig = new ConnectorConfig();
     connectorConfig.setSessionId(authResponse.getAccessToken());
     // https://instance_name—api.salesforce.com/services/async/APIversion/job/jobid/batch
@@ -69,13 +68,13 @@ public final class SalesforceBulkAPIs {
     return new BulkConnection(connectorConfig);
   }
 
-  private static AuthResponse oauthLogin(String clientId, String clientSecret,
+  private static AuthResponse oauthLogin(String loginUrl, String clientId, String clientSecret,
                                          String username, String password) throws Exception {
     SslContextFactory sslContextFactory = new SslContextFactory();
     HttpClient httpClient = new HttpClient(sslContextFactory);
     try {
       httpClient.start();
-      String response = httpClient.POST(AUTH_URL).param("grant_type", "password")
+      String response = httpClient.POST(loginUrl).param("grant_type", "password")
         .param("client_id", clientId)
         .param("client_secret", clientSecret)
         .param("username", username)

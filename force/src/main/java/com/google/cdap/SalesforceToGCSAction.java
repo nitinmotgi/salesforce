@@ -96,8 +96,8 @@ public class SalesforceToGCSAction extends Action {
 
     Config(String referenceName, String clientId, String clientSecret, String username, String password,
            String object, String query, @Nullable String project, @Nullable String serviceAccountPath,
-           String bucket, String subPath, @Nullable String apiVersion) {
-      super(referenceName, clientId, clientSecret, username, password, object, apiVersion);
+           String bucket, String subPath, @Nullable String apiVersion, @Nullable String loginUrl) {
+      super(referenceName, clientId, clientSecret, username, password, object, apiVersion, loginUrl);
       this.query = query;
       this.project = project;
       this.serviceAccountPath = serviceAccountPath;
@@ -134,9 +134,9 @@ public class SalesforceToGCSAction extends Action {
 
   @Override
   public void run(ActionContext actionContext) throws Exception {
-    BulkConnection bulkConnection = SalesforceBulkAPIs.getBulkConnection(config.getClientId(), config.getClientSecret(),
-                                                                         config.getUsername(), config.getPassword(),
-                                                                         config.getApiVersion());
+    BulkConnection bulkConnection = SalesforceBulkAPIs.getBulkConnection(config.getLoginUrl(), config.getClientId(),
+                                                                         config.getClientSecret(), config.getUsername(),
+                                                                         config.getPassword(), config.getApiVersion());
     JobInfo job = SalesforceBulkAPIs.createJob(config.getObject(), bulkConnection);
     List<String> results = SalesforceBulkAPIs.runBulkQuery(config.query, bulkConnection, job);
     for (String result : results) {
