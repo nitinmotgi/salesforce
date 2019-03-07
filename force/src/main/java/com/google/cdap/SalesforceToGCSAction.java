@@ -33,10 +33,14 @@ import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.StorageScopes;
 import com.google.api.services.storage.model.StorageObject;
 import com.google.cloud.ServiceOptions;
-import com.google.cloud.storage.StorageOptions;
-import com.google.common.base.Charsets;
+import com.sforce.async.AsyncApiException;
+import com.sforce.async.BatchInfo;
+import com.sforce.async.BatchStateEnum;
 import com.sforce.async.BulkConnection;
 import com.sforce.async.JobInfo;
+import com.sforce.async.QueryResultList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -45,7 +49,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.util.Collection;
-import java.util.List;
 import javax.annotation.Nullable;
 
 @Plugin(type = Action.PLUGIN_TYPE)
@@ -53,6 +56,7 @@ import javax.annotation.Nullable;
 @Description("Downloads Salesforce data to GCS based on the provided query")
 public class SalesforceToGCSAction extends Action {
   static final String NAME = "SalesforceToGCS";
+  private static final Logger LOG = LoggerFactory.getLogger(SalesforceToGCSAction.class);
 
   private final Config config;
 
@@ -138,17 +142,41 @@ public class SalesforceToGCSAction extends Action {
                                                                          config.getClientSecret(), config.getUsername(),
                                                                          config.getPassword(), config.getApiVersion());
     JobInfo job = SalesforceBulkAPIs.createJob(config.getObject(), bulkConnection);
-    List<String> results = SalesforceBulkAPIs.runBulkQuery(config.query, bulkConnection, job);
-    for (String result : results) {
-      write(result);
+    runBulkQuery(config.query, bulkConnection, job);
+  }
+
+
+  private void runBulkQuery(String query, BulkConnection bulkConnection, JobInfo job)
+    throws IOException, AsyncApiException, GeneralSecurityException, InterruptedException {
+    BatchInfo info;
+    try (ByteArrayInputStream bout = new ByteArrayInputStream(query.getBytes())) {
+      info = bulkConnection.createBatchFromStream(job, bout);
+      for (int i = 0; i < 10000; i++) {
+        info = bulkConnection.getBatchInfo(job.getId(), info.getId());
+        if (BatchStateEnum.Completed == info.getState()) {
+          QueryResultList list = bulkConnection.getQueryResultList(job.getId(), info.getId());
+          for (String result : list.getResult()) {
+            // The InputStreamContent class that uses this InputStream in the write method closes the
+            // InputStream after it is done processing. Hence, don't need to close this InputStream explicitly.
+            write(bulkConnection.getQueryResultStream(job.getId(), info.getId(), result));
+          }
+
+          break;
+        } else if (BatchStateEnum.Failed == info.getState()) {
+          LOG.error("Failed " + info);
+          break;
+        } else {
+          // Sleep for a second before making the next request to avoid hammering the service.
+          Thread.sleep(1000);
+          LOG.debug("Waiting " + info);
+        }
+      }
     }
   }
 
-  private void write(String data) throws IOException, GeneralSecurityException {
-    InputStream is = new ByteArrayInputStream(data.getBytes(Charsets.UTF_8));
+  private void write(InputStream is) throws IOException, GeneralSecurityException {
     InputStreamContent contentStream = new InputStreamContent("application/text", is);
-    // Setting the length improves upload performance
-    contentStream.setLength(data.length());
+    // TODO: Setting the length improves upload performance. Can it be set, without loading the content in memory?
     StorageObject objectMetadata = new StorageObject()
       // Set the destination object name
       .setName(config.subPath);
