@@ -36,8 +36,6 @@ import com.google.cloud.ServiceOptions;
 import com.sforce.async.AsyncApiException;
 import com.sforce.async.BatchInfo;
 import com.sforce.async.BatchStateEnum;
-import com.google.cloud.storage.StorageOptions;
-import com.google.common.base.Charsets;
 import com.sforce.async.BulkConnection;
 import com.sforce.async.JobInfo;
 import com.sforce.async.QueryResultList;
@@ -158,7 +156,7 @@ public class SalesforceToGCSAction extends Action {
         if (BatchStateEnum.Completed == info.getState()) {
           QueryResultList list = bulkConnection.getQueryResultList(job.getId(), info.getId());
           for (String result : list.getResult()) {
-            write(bulkConnection.getQueryResultStream(job.getId(), info.getId(), result), config.subPath);
+            write(bulkConnection.getQueryResultStream(job.getId(), info.getId(), result));
           }
 
           break;
@@ -172,12 +170,12 @@ public class SalesforceToGCSAction extends Action {
     }
   }
 
-  private void write(InputStream is, String path) throws IOException, GeneralSecurityException {
+  private void write(InputStream is) throws IOException, GeneralSecurityException {
     InputStreamContent contentStream = new InputStreamContent("application/text", is);
     // TODO: Setting the length improves upload performance. Can it be set, without loading the content in memory?
     StorageObject objectMetadata = new StorageObject()
-            // Set the destination object name
-            .setName(path);
+      // Set the destination object name
+      .setName(config.subPath);
 
     // Do the insert
     Storage client = createStorage();
