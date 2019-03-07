@@ -146,8 +146,8 @@ public class SalesforceToGCSAction extends Action {
   }
 
 
-  private void runBulkQuery(String query, BulkConnection bulkConnection,
-                            JobInfo job) throws IOException, AsyncApiException, GeneralSecurityException {
+  private void runBulkQuery(String query, BulkConnection bulkConnection, JobInfo job)
+    throws IOException, AsyncApiException, GeneralSecurityException, InterruptedException {
     BatchInfo info;
     try (ByteArrayInputStream bout = new ByteArrayInputStream(query.getBytes())) {
       info = bulkConnection.createBatchFromStream(job, bout);
@@ -156,6 +156,8 @@ public class SalesforceToGCSAction extends Action {
         if (BatchStateEnum.Completed == info.getState()) {
           QueryResultList list = bulkConnection.getQueryResultList(job.getId(), info.getId());
           for (String result : list.getResult()) {
+            // The InputStreamContent class that uses this InputStream in the write method closes the
+            // InputStream after it is done processing. Hence, don't need to close this InputStream explicitly.
             write(bulkConnection.getQueryResultStream(job.getId(), info.getId(), result));
           }
 
@@ -164,6 +166,8 @@ public class SalesforceToGCSAction extends Action {
           LOG.error("Failed " + info);
           break;
         } else {
+          // Sleep for a second before making the next request to avoid hammering the service.
+          Thread.sleep(1000);
           LOG.debug("Waiting " + info);
         }
       }
