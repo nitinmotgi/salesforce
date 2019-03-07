@@ -36,6 +36,8 @@ import com.google.cloud.ServiceOptions;
 import com.sforce.async.AsyncApiException;
 import com.sforce.async.BatchInfo;
 import com.sforce.async.BatchStateEnum;
+import com.google.cloud.storage.StorageOptions;
+import com.google.common.base.Charsets;
 import com.sforce.async.BulkConnection;
 import com.sforce.async.JobInfo;
 import com.sforce.async.QueryResultList;
